@@ -378,6 +378,7 @@ class GridBlueprint(yamlize.Object):
             # about whether gridContents exist at all.
             self.gridContents = dict()
 
+    # TODO: I BELIEVE THIS IS THE ONLY PLACE WE READ FROM LATTICE, IN WHICH CASE HURRAH, WE CAN SET OUR FLAG HERE.
     def _readGridContentsLattice(self):
         """Read an ascii map of grid contents.
 

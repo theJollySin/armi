@@ -1402,71 +1402,85 @@ class GridBlueprintControl(wx.Panel):
         blueprints can be useful when cobbling blueprints together with !include flags.
         """
         if stream is None:
-            # Prompt the user for a file name, open it, and call ourself again with that
-            # as the stream argument
-            if self._fName is None:
-                wd = os.getcwd()
-            else:
-                wd = os.path.split(self._fName)[0]
+            self._save_no_stream(full)
+        else:
+            self._save_with_stream(stream, full)
 
-            # Don't use the blueprints filename as the default if we are only saving the
-            # grids section; doing so may encourage users to overwrite their main
-            # blueprints file.
-            if full:
-                fName = self._fName or ""
-            else:
-                fName = ""
+    def _save_no_stream(self, full=False):
+        """Prompt for a file to save to.
 
-            title = "Save blueprints to..." if full else "Save grid designs to..."
+        This can save either the entire blueprints, or just the `grids:` section of the
+        blueprints, based on the passed ``full`` argument. Saving just the grid
+        blueprints can be useful when cobbling blueprints together with !include flags.
+        """
+        # Prompt the user for a file name, open it, and call ourself again with that
+        # as the stream argument
+        if self._fName is None:
+            wd = os.getcwd()
+        else:
+            wd = os.path.split(self._fName)[0]
 
-            dlg = wx.FileDialog(
-                self,
-                message=title,
-                defaultDir=wd,
-                defaultFile=fName,
-                wildcard=self._wildcard,
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-            )
+        # Don't use the blueprints filename as the default if we are only saving the
+        # grids section; doing so may encourage users to overwrite their main
+        # blueprints file.
+        if full:
+            fName = self._fName or ""
+        else:
+            fName = ""
 
-            if dlg.ShowModal() == wx.ID_OK:
-                path = dlg.GetPath()
-            else:
-                return
+        title = "Save blueprints to..." if full else "Save grid designs to..."
 
-            # Disallow overwriting the main blueprints with the grids section
-            if (
-                not full
-                and pathlib.Path(path).exists()
-                and pathlib.Path(path).samefile(self._fName)
-            ):
-                message = (
-                    "The chosen path, `{}` is the same as the main blueprints "
-                    'file. This tool only saves the "grids" section of the '
-                    "blueprints file, so saving over the original top-level blueprints "
-                    "will lead to data loss. Try again with a different name.".format(
-                        path
-                    )
-                )
+        dlg = wx.FileDialog(
+            self,
+            message=title,
+            defaultDir=wd,
+            defaultFile=fName,
+            wildcard=self._wildcard,
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        )
 
-                with wx.MessageDialog(
-                    self,
-                    message,
-                    "Overwriting top-level blueprints!",
-                    style=wx.ICON_WARNING,
-                ) as dlg:
-                    dlg.ShowModal()
-                    return
-
-            # Try writing to an internal buffer before opening the file for write. This
-            # way to don't destroy anything unless we know we have something with which
-            # to replace it.
-            bpStream = io.StringIO()
-            self.save(bpStream)
-            with open(path, "w") as stream:
-                stream.write(bpStream.getvalue())
-
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+        else:
             return
 
+        # Disallow overwriting the main blueprints with the grids section
+        if (
+            not full
+            and pathlib.Path(path).exists()
+            and pathlib.Path(path).samefile(self._fName)
+        ):
+            message = (
+                "The chosen path, `{}` is the same as the main blueprints "
+                'file. This tool only saves the "grids" section of the '
+                "blueprints file, so saving over the original top-level blueprints "
+                "will lead to data loss. Try again with a different name.".format(path)
+            )
+
+            with wx.MessageDialog(
+                self,
+                message,
+                "Overwriting top-level blueprints!",
+                style=wx.ICON_WARNING,
+            ) as dlg:
+                dlg.ShowModal()
+                return
+
+        # Try writing to an internal buffer before opening the file for write. This
+        # way to don't destroy anything unless we know we have something with which
+        # to replace it.
+        bpStream = io.StringIO()
+        self.save(bpStream)
+        with open(path, "w") as stream:
+            stream.write(bpStream.getvalue())
+
+    def _save_with_stream(self, stream, full=False):
+        """Save the blueprints to the passed stream.
+
+        This can save either the entire blueprints, or just the `grids:` section of the
+        blueprints, based on the passed ``full`` argument. Saving just the grid
+        blueprints can be useful when cobbling blueprints together with !include flags.
+        """
         # To save, we want to try our best to output our grid blueprints in the lattice
         # map style. However, we do not want to wreck the state that the current
         # blueprints are in. So we make a copy and do some manipulations to try to
@@ -1518,6 +1532,7 @@ class GridBlueprintControl(wx.Panel):
 
         toSave = bp if full else bp.gridDesigns
 
+        # TODO: JOHN! THE output point
         type(toSave).dump(toSave, stream)
 
     def open(self, _event):
