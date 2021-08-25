@@ -1495,40 +1495,42 @@ class GridBlueprintControl(wx.Panel):
             if gridDesignType == "coreEqPath":
                 continue
             _filterOutsideDomain(gridDesign)
-            if gridDesign.gridContents:
 
-                try:
-                    aMap = asciimaps.asciiMapFromGeomAndSym(
-                        self.grid.geomType, self.grid.symmetry
-                    )()
-                    # asciimaps can't handle negative indices, so we bump everything
-                    # forward if needed
-                    offset = (
-                        min(key[0] for key in gridDesign.gridContents.keys()),
-                        min(key[1] for key in gridDesign.gridContents.keys()),
-                    )
-                    aMap.asciiLabelByIndices = {
-                        (key[0] - offset[0], key[1] - offset[1]): val
-                        for key, val in gridDesign.gridContents.items()
-                    }
-                    aMap.gridContentsToAscii()
-                except Exception as e:
-                    runLog.warning(
-                        "Cannot write geometry with asciimap. Defaulting to dict. Issue: {}".format(
-                            e
-                        )
-                    )
-                    aMap = None
+            if not gridDesign.gridContents:
+                continue
 
-                if aMap is not None:
-                    mapString = io.StringIO()
-                    aMap.writeAscii(mapString)
-                    # deep ruamel.yaml magic
-                    formattedStr = scalarstring.LiteralScalarString(
-                        mapString.getvalue()
+            try:
+                aMap = asciimaps.asciiMapFromGeomAndSym(
+                    self.grid.geomType, self.grid.symmetry
+                )()
+                # asciimaps can't handle negative indices, so we bump everything
+                # forward if needed
+                offset = (
+                    min(key[0] for key in gridDesign.gridContents.keys()),
+                    min(key[1] for key in gridDesign.gridContents.keys()),
+                )
+                aMap.asciiLabelByIndices = {
+                    (key[0] - offset[0], key[1] - offset[1]): val
+                    for key, val in gridDesign.gridContents.items()
+                }
+                aMap.gridContentsToAscii()
+            except Exception as e:
+                runLog.warning(
+                    "Cannot write geometry with asciimap. Defaulting to dict. Issue: {}".format(
+                        e
                     )
-                    gridDesign.latticeMap = formattedStr
-                    gridDesign.gridContents = None
+                )
+                aMap = None
+
+            if aMap is not None:
+                mapString = io.StringIO()
+                aMap.writeAscii(mapString)
+                # deep ruamel.yaml magic
+                formattedStr = scalarstring.LiteralScalarString(
+                    mapString.getvalue()
+                )
+                gridDesign.latticeMap = formattedStr
+                gridDesign.gridContents = None
 
         toSave = bp if full else bp.gridDesigns
 
