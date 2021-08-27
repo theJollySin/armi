@@ -554,9 +554,7 @@ def save_to_stream(stream, bluep, grid, full=False):
             continue
 
         try:
-            aMap = asciimaps.asciiMapFromGeomAndSym(
-                grid.geomType, grid.symmetry
-            )()
+            aMap = asciimaps.asciiMapFromGeomAndSym(grid.geomType, grid.symmetry)()
             # asciimaps can't handle negative indices, so we bump everything
             # forward if needed
             offset = (
@@ -580,9 +578,7 @@ def save_to_stream(stream, bluep, grid, full=False):
             mapString = StringIO()
             aMap.writeAscii(mapString)
             # deep ruamel.yaml magic
-            formattedStr = scalarstring.LiteralScalarString(
-                mapString.getvalue()
-            )
+            formattedStr = scalarstring.LiteralScalarString(mapString.getvalue())
             gridDesign.latticeMap = formattedStr
             gridDesign.gridContents = None
 
@@ -590,4 +586,3 @@ def save_to_stream(stream, bluep, grid, full=False):
 
     # NOTE: type(bp) here used because importing Blueprints causes a circular import
     type(toSave).dump(toSave, stream)
-

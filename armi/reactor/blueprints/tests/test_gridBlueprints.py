@@ -308,8 +308,8 @@ class TestGridBlueprintsSection(unittest.TestCase):
         # test that we can correctly save this to a YAML
         bp = Blueprints.load(TestCustomIsotopics.yamlString)
         bp.gridDesigns = Grids.load(GRIDS.format(self._testMethodName))
-        filePath = 'TestGridBlueprintsSection__test_simpleRead.log'
-        stream = open(filePath, 'w')
+        filePath = "TestGridBlueprintsSection__test_simpleRead.log"
+        stream = open(filePath, "w")
         save_to_stream(stream, bp, grid, True)
 
         self.assertTrue(os.path.exists(filePath))
