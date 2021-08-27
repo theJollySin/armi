@@ -14,14 +14,19 @@
 """Tests for grid blueprints."""
 # pylint: disable=wrong-import-position
 import io
+import os
 import unittest
 
 from armi import configure, isConfigured
 
 if not isConfigured():
     configure()
-from armi.reactor.blueprints import gridBlueprint
 from armi.reactor import systemLayoutInput
+from armi.reactor.blueprints import Blueprints
+from armi.reactor.blueprints.gridBlueprint import Grids, save_to_stream
+from armi.reactor.blueprints.tests.test_customIsotopics import TestCustomIsotopics
+from armi.reactor.blueprints.tests.test_reactorBlueprints import GRIDS
+
 
 LATTICE_BLUEPRINT = """
 control:
@@ -262,39 +267,37 @@ class TestGridBlueprintsSection(unittest.TestCase):
     """Tests for lattice blueprint section."""
 
     def setUp(self):
-        self.grids = gridBlueprint.Grids.load(
-            LATTICE_BLUEPRINT.format(self._testMethodName)
-        )
+        self.grids = Grids.load(LATTICE_BLUEPRINT.format(self._testMethodName))
 
-    def test_simple_read(self):
+    def test_simpleRead(self):
         gridDesign = self.grids["control"]
-        _grid = gridDesign.construct()
+        _ = gridDesign.construct()
         self.assertEqual(gridDesign.gridContents[0, -8], "6")
 
         # Cartesian full, odd
         gridDesign2 = self.grids["sfp"]
-        _grid = gridDesign2.construct()
+        _ = gridDesign2.construct()
         self.assertEqual(gridDesign2.gridContents[1, 1], "1")
         self.assertEqual(gridDesign2.gridContents[0, 0], "3")
         self.assertEqual(gridDesign2.gridContents[-1, -1], "3")
 
         # Cartesian quarter, odd
         gridDesign3 = self.grids["sfp quarter"]
-        _grid = gridDesign3.construct()
+        grid = gridDesign3.construct()
         self.assertEqual(gridDesign3.gridContents[0, 0], "2")
         self.assertEqual(gridDesign3.gridContents[1, 1], "3")
         self.assertEqual(gridDesign3.gridContents[2, 2], "3")
         self.assertEqual(gridDesign3.gridContents[3, 3], "1")
-        self.assertTrue(_grid.symmetry.isThroughCenterAssembly)
+        self.assertTrue(grid.symmetry.isThroughCenterAssembly)
 
         # cartesian quarter, even not through center
         gridDesign3 = self.grids["sfp quarter even"]
-        _grid = gridDesign3.construct()
-        self.assertFalse(_grid.symmetry.isThroughCenterAssembly)
+        grid = gridDesign3.construct()
+        self.assertFalse(grid.symmetry.isThroughCenterAssembly)
 
         # Cartesian full, even/odd hybrid
         gridDesign4 = self.grids["sfp even"]
-        _grid = gridDesign4.construct()
+        grid = gridDesign4.construct()
         self.assertEqual(gridDesign4.gridContents[0, 0], "4")
         self.assertEqual(gridDesign4.gridContents[-1, -1], "2")
         self.assertEqual(gridDesign4.gridContents[2, 2], "2")
@@ -302,14 +305,25 @@ class TestGridBlueprintsSection(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.assertEqual(gridDesign4.gridContents[-4, -3], "1")
 
+        # test that we can correctly save this to a YAML
+        bp = Blueprints.load(TestCustomIsotopics.yamlString)
+        bp.gridDesigns = Grids.load(GRIDS.format(self._testMethodName))
+        filePath = 'TestGridBlueprintsSection__test_simpleRead.log'
+        stream = open(filePath, 'w')
+        save_to_stream(stream, bp, grid, True)
+
+        self.assertTrue(os.path.exists(filePath))
+        try:
+            os.remove(filePath)
+        except:
+            pass
+
 
 class TestRZTGridBlueprint(unittest.TestCase):
-    """
-    Tests for R-Z-Theta grid inputs.
-    """
+    """Tests for R-Z-Theta grid inputs."""
 
     def setUp(self):
-        self.grids = gridBlueprint.Grids.load(RZT_BLUEPRINT)
+        self.grids = Grids.load(RZT_BLUEPRINT)
 
     def test_construct(self):
         gridDesign = self.grids["rzt_core"]
